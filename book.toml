@@ -10,3 +10,4 @@ create-missing = true
 
 [output.html]
 default-theme = "ayu"
+git-repository-url = "https://github.com/veykril"
