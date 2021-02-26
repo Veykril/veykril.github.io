@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: " en" }}">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}</title>
+  <link rel="stylesheet" href="{{ " /assets/main.css" }}">
+  <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ " /feed.xml" | prepend:
+    site.baseurl | prepend: site.url }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+  <style>
+    .site-footer {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      width: 100%;
+    }
+  </style>
+</head>
+
+
+<body>
+
+  {%- include header.html -%}
+
+  <main class="page-content" aria-label="Content">
+    <div class="wrapper">
+      {{ content }}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      <a href="{{ " /feed.xml" | prepend: site.baseurl }}">
+        <i class="fa fa-rss"></i> rss
+      </a>
+
+      <a href="https://github.com/{{ site.github_username | cgi_escape | escape }}">
+        <i class="fa fa-github"></i> {{ site.github_username| escape }}
+      </a>
+
+      <a href="https://twitter.com/{{ site.twitter_username | cgi_escape | escape }}">
+        <i class="fa fa-twitter"></i> {{ site.twitter_username| escape }}
+      </a>
+    </p>
+  </footer>
+</body>
+
+</html>

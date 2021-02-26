@@ -1,0 +1,23 @@
+title: Veykril's Blog
+description: >- 
+  "Another blog by some random guy"
+baseurl: ""
+url: "https://veykril.github.io/"
+twitter_username: veykril
+github_username: veykril
+permalink: /:categories/:year/:month/:day/:title:output_ext
+
+theme: minima
+plugins:
+  - jekyll-asciidoc
+  - jekyll-feed
+
+asciidoc: {}
+asciidoctor:
+  attributes:
+    - icons=font
+    - sectanchors=_
+    - stylesdir=styles
+    - source-highlighter=rouge
+    - source-linenums-option=_
+    - rouge-style=github

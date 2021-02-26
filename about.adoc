@@ -1,0 +1,5 @@
+= About
+:page-layout: home
+:page-permalink: /about/
+
+Hey, I am Lukas Wirth, a Computer Science Student at the University of Paderborn who loves Rust.
