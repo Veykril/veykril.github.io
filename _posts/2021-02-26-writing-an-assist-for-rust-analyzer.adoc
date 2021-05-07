@@ -1,0 +1,75 @@
+= Writing an assist for Rust-Analyzer
+:page-layout: post
+:categories: [jekyll, update]
+:fn-architecture: footnote:[The interested people might want to read through the https://github.com/rust-analyzer/rust-analyzer/blob/master/docs/dev/architecture.md[architecture] documentation]
+
+First blog post, bear with me :)
+
+If you've been using rust-analyzer for some time you probably have seen and used a handful of assists already.
+For those that haven't, assists are automatic refactors the language server can do for you indicated in VSCode by a small 💡. The https://rust-analyzer.github.io/[rust-analyzer blog] has a great https://rust-analyzer.github.io/blog/2020/09/28/how-to-make-a-light-bulb.html[post] about how the assist system works on a higher level. This post on the other hand is more interested in exploring how an assist specifically looks like, by implementing one! This post expects basic rust knowledge.
+
+Rust-Analyzer already has a great number of helpful assists like https://github.com/rust-analyzer/rust-analyzer/pull/7535[extracting code into a function], https://github.com/rust-analyzer/rust-analyzer/pull/6172[qualifying a path], https://github.com/rust-analyzer/rust-analyzer/pull/1952[applying de morgan's law] and many more. The assist we will implement today is one that already exists in the https://intellij-rust.github.io/[intellij-rust] plugin which rust-analyzer still lacks, the un-elide lifetimes assist.
+
+==== The setup
+
+Rust-Analyzer is split into a lot of crates to seperate different layers of functionality{fn-architecture}, assists live in their own crate, https://github.com/rust-analyzer/rust-analyzer/tree/2a4076c14d0e3f7ae03908c2b9cd1a52851d401c/crates/ide_assists[ide_assists]. The first thing we have to do is create a new module for our assist to live in and give it the default assist entrypoint:
+
+.ide_assists/src/handlers/unelide_lifetime.rs
+[source,rust]
+----
+use crate::assist_context::{AssistContext, Assists};
+
+// Assist: unelide_use
+//
+// Un-elides lifetimes in a function signature
+//
+// ```
+// fn foo$0(s: &str) -> &str {
+//    s
+// }
+// ```
+// ->
+// ```
+// fn foo<'a>(s: &'a str) -> &'a str {
+//    s
+// }
+// ```
+fn unelide_lifetime(acc: &mut Assists, ctx: &AssistContext)
+     -> Option<()>
+{
+    None
+}
+----
+
+This is how every assist starts out, we will get to the types used here in a bit but first let's add
+our assist to the list of assists in https://github.com/rust-analyzer/rust-analyzer/blob/f682627da4be4777fa0c1527398ef4136cd929b1/crates/ide_assists/src/lib.rs#L171[crates/ide_assists/src/lib.rs]:
+
+
+.https://github.com/rust-analyzer/rust-analyzer/blob/f682627da4be4777fa0c1527398ef4136cd929b1/crates/ide_assists/src/lib.rs#L171[crates/ide_assists/src/lib.rs]
+[source,rust]
+----
+    pub(crate) fn all() -> &'static [Handler] {
+        &[
+            // These are alphabetic for the foolish consistency
+            /* *snip* */
+            unelide_lifetime::unelide_lifetime,
+            /* *snip* */
+        ]
+    }
+----
+
+With this our assist function now gets called whenever assists are requested!
+
+Now to get to the interesting parts, first of all we want to understand how lifetime elision in the language works so we can properly un-elide what the compiler elides for us. This is written down in the lifetime elision https://rust-lang.github.io/rfcs/0141-lifetime-elision.html[RFC#141], as this post is about creating the assist I won't go into the specifics of how elision works unless necessary.
+
+RA assists usually have two components to them, a part that checks whether the assist is applicable and a part that does the actual action of refactoring, this is also the reason why we register a "constructor" function for assists and add them ourselves to the `Assists` object. We only want to add assists if they are applicable as showing inapplicable ones doesn't benefit the user. With this in mind the first step is to think about when we want the assist to be applicable, in this case it makes sense to be applicable when we are inside a function signature if it contains at least one type that holds a lifetime.
+
+.ide_assists/src/handlers/unelide_lifetime.rs
+[source,rust]
+----
+fn unelide_lifetime(acc: &mut Assists, ctx: &AssistContext)
+     -> Option<()>
+{
+    None
+}
+----

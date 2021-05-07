@@ -7,7 +7,6 @@ twitter_username: veykril
 github_username: veykril
 permalink: /:categories/:year/:month/:day/:title:output_ext
 
-theme: minima
 plugins:
   - jekyll-asciidoc
   - jekyll-feed
