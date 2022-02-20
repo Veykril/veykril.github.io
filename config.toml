@@ -1,0 +1,32 @@
+base_url = "https://veykril.github.io"
+default_language = "en"
+
+title = "Lukas Wirth"
+description = "Lukas Wirth's blog"
+
+compile_sass = true
+build_search_index = true
+generate_feed = true
+feed_filename = "rss.xml"
+
+
+[markdown]
+highlight_code = true
+
+[extra]
+navbar_items = [
+    { url = "$BASE_URL/tlborm", name = "tlborm", description = "The Little Book of Rust Macros" },
+]
+
+
+[extra.favicon]
+favicon_16x16 = "/icons/favicon-16x16.png"
+favicon_32x32 = "/icons/favicon-32x32.png"
+
+[extra.author]
+name = "Lukas Wirth"
+avatar = "/images/avatar.jpg"
+
+[extra.social]
+github = "veykril"
+twitter = "veykril"

@@ -1,0 +1,140 @@
+// style declarations for blog posts
+
+.post-header
+    margin-bottom: 1em
+    margin-top: 0.5em
+
+.post-title
+    font-size: $post-title-size
+
+.post-meta
+    margin-top: 0.25em
+    font-size: 1.5em
+    color: #aaa
+
+.post-content
+    font-family: $main-font
+    font-size: 18px
+    font-weight: 300
+    margin: 0 10px 0px 10px
+    line-height: 29px
+
+    h4
+        margin: 45px 0px -10px 0px
+        font-size: 20px
+        font-weight: 700
+
+    h2
+        margin: 55px 0px -10px 0px
+        font-size: 24px
+        font-weight: 900
+
+    h1
+        margin: 65px 0px -5px 0px
+        font-size: 30px
+        font-weight: 900
+
+    &>ul, &>ol
+        margin-top: 30px
+        margin-bottom: 30px
+
+    ul, ol
+        margin-left: 30px
+
+        li
+            p
+                margin: 15px 0px
+
+            pre
+                margin: 0
+
+    img
+        width: 100%
+        border-radius: 15px
+        border: 2px solid darken($grey-bg-color, 20)
+        margin: -10px 0
+
+    img + em
+        margin-top: 10px
+        display: block
+        margin-left: 20px
+        margin-right: 20px
+        color: darken($grey-bg-color, 60)
+        font-style: normal
+        text-align: center
+        font-size: 16px
+
+    p
+        margin: 30px 0px
+
+        & > small
+            font-size: 14px
+            display: block
+            line-height: 25px
+
+    hr
+        border: none
+        border-top: 1px solid darken($grey-bg-color, 20)
+        margin: 0 20%
+
+    code
+        $inline-code-bg: #f4f4f0
+        font-family: $mono-font
+        background-color: $inline-code-bg
+        border-radius: 5px
+        border: 1px solid darken($inline-code-bg, 5%)
+        padding: 2px 4px
+        white-space: nowrap
+
+    pre
+        border: 1px solid darken($grey-bg-color, 15%)
+        border-radius: 5px
+        padding: 2px 5px
+        margin: -7px 0px
+        overflow: auto
+        line-height: 26px
+        & > code
+            white-space: pre
+            font-family: $mono-font
+            padding: 2px 2px
+            border: none
+            background: none
+
+    blockquote
+        color: #666
+        padding-right: 3px
+        border-left: 3px solid #cab41a
+        background-color: #cab41a20
+        padding-left: 13px
+
+@media only screen and (min-width: 850px)
+    .post-content
+        p
+            text-align: justify
+            hyphens: auto
+
+@media only screen and (max-width: 600px)
+    .post-title
+        font-size: 27px
+
+    .post-meta
+        font-size: 14px
+
+    .post-content
+        margin: 0 5px
+        font-size: 15px
+        line-height: 25px
+
+        p
+            margin: 20px 0px
+
+            code
+                white-space: normal
+
+        h1
+            font-size: 24px
+            line-height: 29px
+
+        h2
+            font-size: 20px
+            line-height: 26px

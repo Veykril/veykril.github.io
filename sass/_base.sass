@@ -1,0 +1,49 @@
+html
+    font-family: $main-font
+    font-size: 22px
+    line-height: 1.5em
+
+*
+    box-sizing: border-box
+    margin: 0
+    padding: 0
+    margin-block-start: 0
+    margin-block-end: 0
+
+body
+    display: flex
+    flex-direction: column
+    align-items: center
+    min-width: 100vh
+
+.page-content
+    display: flex
+    flex-direction: column
+    width: 100%
+    max-width: 80ch
+    padding-left: 2ch
+    padding-right: 2ch
+
+a
+    color: $link-color
+    &:active, &:hover
+        outline: 0
+
+    &:focus, &:hover
+        color: $link-hover-color
+
+    &:active
+        color: $link-hover-color
+        opacity: 0.9
+
+    .active
+        color: $link-hover-color
+
+@media only screen and (max-width: 600px)
+    .page-content
+        padding: 0 3px
+
+    #center-all
+        width: 95%
+
+@import "header", "footer", "index", "post"

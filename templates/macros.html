@@ -1,0 +1,28 @@
+{% macro header() %}
+  <header>
+    <nav class="site-header">
+      <a class="title" href="{{ config.base_url }}/">{{ config.title }}</a>
+      <div class="navbar">
+        {% for nav in config.extra.navbar_items %}
+          <a class="navbar-item" href="{{ nav.url | replace(from='$BASE_URL', to=config.base_url) }}" {% if nav.description %} title="{{nav.description}}" {% endif %}>
+            {{ nav.name }}
+          </a>
+        {% endfor %}
+      </div>
+    </nav>
+  </header>
+{% endmacro header %}
+
+{% macro footer() %}
+  <footer class="site-footer">
+    <p>
+      <a href="{{config.base_url}}/rss.xml"}}">
+        <i class="fa fa-rss"></i> rss
+      </a>
+
+      <a href="https://github.com/veykril">
+        <i class="fa fa-github"></i> veykril
+      </a>
+    </p>
+  </footer>
+{% endmacro footer %}

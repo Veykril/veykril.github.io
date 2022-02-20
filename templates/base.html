@@ -1,0 +1,37 @@
+{% import "macros.html" as macros %}
+
+<!DOCTYPE html>
+<html lang="{{lang}}">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+
+  <link href='/icons/favicon-32x32.png' rel="icon" sizes="16x16" type="image/png" />
+  <link href='/icons/favicon-32x32.png' rel="icon" sizes="32x32" type="image/png" />
+
+  <link href="{{ get_url(path='main.css') }}" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+
+  <title>
+    {% block title %}
+    {{ config.title }}
+    {% endblock title %}
+  </title>
+</head>
+
+<body lang="en">
+  {{ macros::header() }}
+
+  <div class="page-content">
+    {% block header %}
+    {% endblock %}
+
+    {% block content %}
+    {% endblock %}
+  </div>
+
+  {{ macros::footer() }}
+</body>
+
+</html>
