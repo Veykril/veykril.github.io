@@ -2,7 +2,7 @@ base_url = "https://veykril.github.io"
 default_language = "en"
 
 title = "Lukas Wirth"
-description = "Lukas Wirth's blog"
+description = "it's some kind of blog, I think?"
 
 compile_sass = true
 build_search_index = true
@@ -12,6 +12,7 @@ feed_filename = "rss.xml"
 
 [markdown]
 highlight_code = true
+highlight_theme = "OneHalfLight"
 
 [extra]
 navbar_items = [

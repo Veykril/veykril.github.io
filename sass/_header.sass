@@ -13,12 +13,15 @@ header
     align-items: baseline
     flex-wrap: wrap
 
-    .title
+    .description
         flex-grow: 2
+        color: $post-meta-color
+        font-weight: 130
+        font-size: 0.8em
 
     a
         line-height: 1.5rem
-        color: rgba(0, 0, 0, .8)
+        color: $header-color
         text-decoration: none
         font-style: normal
 
@@ -27,7 +30,7 @@ header
             right: 1ch
 
         &:hover
-            color: rgba(0, 0, 0, .8)
+            color: $header-color
             text-decoration: underline
 
         &.title

@@ -1,4 +1,4 @@
-// style declarations for blog posts
+// styling is adapted from https://github.com/LukasKalbertodt/LukasKalbertodt.github.io
 
 .post-header
     margin-bottom: 1em
@@ -10,7 +10,7 @@
 .post-meta
     margin-top: 0.25em
     font-size: 1.5em
-    color: #aaa
+    color: $post-meta-color
 
 .post-content
     font-family: $main-font
@@ -78,11 +78,10 @@
         margin: 0 20%
 
     code
-        $inline-code-bg: #f4f4f0
         font-family: $mono-font
-        background-color: $inline-code-bg
+        background-color: $inline-code-bg-color
         border-radius: 5px
-        border: 1px solid darken($inline-code-bg, 5%)
+        border: 1px solid darken($inline-code-bg-color, 5%)
         padding: 2px 4px
         white-space: nowrap
 
@@ -101,10 +100,10 @@
             background: none
 
     blockquote
-        color: #666
+        color: $blockquote-color
         padding-right: 3px
-        border-left: 3px solid #cab41a
-        background-color: #cab41a20
+        border-left: 3px solid $blockquote-border-color
+        background-color: $blockquote-background-color
         padding-left: 13px
 
 @media only screen and (min-width: 850px)

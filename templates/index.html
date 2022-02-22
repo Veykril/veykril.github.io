@@ -5,7 +5,7 @@
         {% set posts = get_section(path="posts/_index.md") %}
         {% for post in posts.pages %}
         <li>
-            <span class="post-meta">{{ post.date }}</span>
+            <span class="post-meta">{{ post.date | date(format="%b %-d, %Y") }}</span>
             <h2>
               <a href="{{ post.permalink }}">{{ post.title }}</a>
             </h2>

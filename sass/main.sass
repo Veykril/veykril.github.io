@@ -1,7 +1,5 @@
-// styling is adapted from https://github.com/LukasKalbertodt/LukasKalbertodt.github.io
 @charset "utf-8"
 
-// Background(papaya colors)
 $bg-color: #FFF
 $grey-bg-color: #E6E6DC
 
@@ -9,36 +7,24 @@ $background-color: #fff
 $border-color: #c3c3c3
 
 $text-color: #333
-
-$gray: #757575
+$footer-color: #000
+$header-color: rgba(0, 0, 0, .75)
+$post-meta-color: #909090
+$blockquote-color: #444
+$blockquote-border-color: #cab41a
+$blockquote-background-color: #cab41a20
+$inline-code-bg-color: #f4f4f0
 
 $link-color: #1d60a3
 $link-hover-color: #1da388
 $link-hover-line-color: #007884
 $icon-hover-color: $link-hover-color
 
-// fonts
 $main-font: "Fira Sans"
 $mono-font: "Inconsolata"
-$title-size: 55px
 $post-title-size: 35px
 
-// other
-$footer-height: 46px
-$color-change: 300ms
-
-// Using media queries with like this:
-// @include media-query($palm) {
-//     .wrapper {
-//         padding-right: $spacing-unit / 2;
-//         padding-left: $spacing-unit / 2;
-//     }
-// }
-@mixin media-query($device)
-    @media screen and (max-width: $device)
-        @content
-
-@import url("https://fonts.googleapis.com/css?family=Fira+Sans:700italic,700,500,300")
+@import url("https://fonts.googleapis.com/css?family=Fira+Sans:italic,700,500,300")
 @import url("https://fonts.googleapis.com/css?family=Inconsolata:400,700")
 
 @import "base"
