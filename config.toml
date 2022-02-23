@@ -24,11 +24,3 @@ navbar_items = [
 [extra.favicon]
 favicon_16x16 = "/icons/favicon-16x16.png"
 favicon_32x32 = "/icons/favicon-32x32.png"
-
-[extra.author]
-name = "Lukas Wirth"
-avatar = "/images/avatar.jpg"
-
-[extra.social]
-github = "veykril"
-twitter = "veykril"
