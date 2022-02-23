@@ -17,7 +17,7 @@
 {% macro footer() %}
   <footer class="site-footer">
     <p>
-      <a href="{{config.base_url}}/rss.xml"}}">
+      <a href="{{ get_url(path="rss.xml", trailing_slash=false) }}">
         <i class="fa fa-rss"></i> rss
       </a>
 
