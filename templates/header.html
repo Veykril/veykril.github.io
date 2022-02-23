@@ -1,0 +1,14 @@
+<header>
+    <nav class="site-header">
+        <a class="title" href="{{ config.base_url }}/">{{ config.title }}</a>
+        <p class="description">{{ config.description }}</p>
+        <div class="navbar">
+            {% for nav in config.extra.navbar_items %}
+            <a class="navbar-item" href="{{ nav.url | replace(from='$BASE_URL', to=config.base_url) }}" {% if
+                nav.description %} title="{{nav.description}}" {% endif %}>
+                {{ nav.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </nav>
+</header>

@@ -16,6 +16,7 @@ highlight_theme = "OneHalfLight"
 
 [extra]
 navbar_items = [
+    { url = "$BASE_URL/about", name = "About", description = "About me" },
     { url = "$BASE_URL/tlborm", name = "tlborm", description = "The Little Book of Rust Macros" },
 ]
 
