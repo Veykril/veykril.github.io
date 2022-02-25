@@ -72,11 +72,14 @@ After that, it just looks at all the surrounding syntax to calculate a completio
 ## Proc-macro Failures
 
 So with proc-macro basics out of the way, what is it that makes rust-analyzer stop showing completions in attribute annotated items in certain situations?
-It involves proc-macro failure.
+In short: proc-macro failure.
+
 Usually when a user types code, they are bound to introduce invalid rust syntax at some point sooner or later.
 This is irrelevant when this invalid syntax occurs outside of macros, as rust-analyzer can easily recover from most syntax errors.
 It gets more complicated within attributed items though.
-When no syntax errors are introduced while typing in such an item, everything works just fine. The proc-macro expands and rust-analyzer can do its completion calculations on the macro expanded output.
+When no syntax errors are introduced while typing in such an item, everything works just fine.
+The proc-macro expands and rust-analyzer can do its completion calculations on the macro expanded output.
+
 When a syntax error does get introduced though, what will usually happen is that the proc-macro either panics (the opposite of being graceful), in which case rust-analyzer just discards the item, or it emits a `compile_err!(...)` invocation (and nothing else) in which case rust-analyzer also discards the item and replaces it with this practically empty expansion.
 And here lies the problem: when calculating completions for the current cursor position, rust-analyzer descends into all macro invocations at the current position first.
 It then calculates completions, but at this point there is nothing to calculate them for, as the proc-macro basically erased everything.
