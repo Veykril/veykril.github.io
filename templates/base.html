@@ -10,6 +10,7 @@
 
     <link href="{{ get_url(path='main.css') }}" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="alternate" type="application/rss+xml" title="veykril's blog" href="{{ get_url(path="rss.xml", trailing_slash=false)}}">
 
     <title>
         {% block title %}
@@ -17,11 +18,6 @@
         {% endblock title %}
     </title>
 
-    {% block rss %}
-        <link
-            rel="alternate" type="application/rss+xml" title="RSS"  href="{{ get_url(path=" rss.xml", trailing_slash=false)}}"
-        >
-    {% endblock %}
 </head>
 
 <body lang="en">
