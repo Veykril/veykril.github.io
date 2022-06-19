@@ -7,15 +7,18 @@
     .post-meta
         display: flex
         justify-content: space-between
+        align-items: center
+        flex-wrap: wrap
         .post-date
-            margin-top: 0.25em
             font-size: 1.5em
             color: $post-meta-color
-        .post-tags a
-            color: $post-meta-color
-            text-decoration: none
-            &:hover
-                text-decoration: underline
+        .post-tags
+            a
+                font-size: 1em
+                color: $post-meta-color
+                text-decoration: none
+                &:hover
+                    text-decoration: underline
 
 .post-title
     font-size: $post-title-size
