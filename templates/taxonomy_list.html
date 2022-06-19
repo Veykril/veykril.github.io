@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<ul class="post-list">
+    {% set terms = terms | sort(attribute="name") %}
+    {% for term in terms %}
+    <li>
+        <h2>
+            <a href="{{ term.permalink }}">{{ term.name }}</a>
+        </h2>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
