@@ -11,5 +11,11 @@
         <a href="https://github.com/veykril">
             <i class="fa fa-github"></i> veykril
         </a>
+
+        {% if page.relative_path %}
+            <a href="https://{{ config.extra.repo_url }}/blob/master/content/{{page.relative_path}}">
+                <i class="fa fa-edit"></i> edit
+            </a>
+        {% endif %}
     </p>
 </footer>
