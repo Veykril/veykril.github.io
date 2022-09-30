@@ -13,10 +13,12 @@
             {{ page.date | date(format="%b %-d, %Y") }}
         </div>
         <div class="post-tags">
-            {% set tags = page.taxonomies.tags %}
-            {% for tag in tags %}
-                <a href="{{ config.base_url }}/tags/{{ tag}}">{{ tag }}</a>
-            {% endfor  %}
+            {% if page.taxonomies.tags %}
+                {% set tags = page.taxonomies.tags %}
+                {% for tag in tags %}
+                    <a href="{{ config.base_url }}/tags/{{ tag}}">{{ tag }}</a>
+                {% endfor %}
+            {% endif %}
         </div>
     </div>
 </div>
