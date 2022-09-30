@@ -8,10 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/master'
     steps:
-      - name: 'Checkout'
+      - name: "Checkout"
         uses: actions/checkout@master
-      - name: 'Build only'
-        uses: shalzz/zola-deploy-action@master
+      - name: "Build only"
+        uses: shalzz/zola-deploy-action@v0.16.1
         env:
           BUILD_DIR: .
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
     steps:
-      - name: 'Checkout'
+      - name: "Checkout"
         uses: actions/checkout@master
-      - name: 'Build and deploy'
-        uses: shalzz/zola-deploy-action@master
+      - name: "Build and deploy"
+        uses: shalzz/zola-deploy-action@v0.16.1
         env:
           PAGES_BRANCH: gh-pages
           BUILD_DIR: .
