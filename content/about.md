@@ -2,8 +2,7 @@
 # Template to use to render this page.
 template = "about.html"
 +++
-Hey, I'm Lukas Wirth, a computer science student at the University of Paderborn.
-I am currently working at [Ferrous Systems](https://ferrous-systems.com/) and a member of the [rust-analyzer working group](https://www.rust-lang.org/governance/teams/compiler#RLS%202.0%20working%20group).
+Hey, I'm Lukas Wirth, a software engineer at [Ferrous Systems](https://ferrous-systems.com/) and the current team lead of the [rust-analyzer team](https://www.rust-lang.org/governance/teams/compiler#team-rust-analyzer).
 
 ---
 
