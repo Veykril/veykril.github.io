@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+
+    <link href='/icons/favicon-32x32.png' rel="icon" sizes="16x16" type="image/png" />
+    <link href='/icons/favicon-32x32.png' rel="icon" sizes="32x32" type="image/png" />
+
+    <link href="https://www.lukaswirth.dev/main.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css" integrity="sha256-XoaMnoYC5TH6/+ihMEnospgm0J1PM/nioxbOUdnM8HY=" crossorigin="anonymous">
+    <link rel="alternate" type="application/rss+xml" title="veykril's blog" href="https://www.lukaswirth.dev/rss.xml">
+
+    <title>
+        
+    IDEs and proc-macros
+
+    </title>
+
+</head>
+
+<body lang="en">
+    <header>
+    <nav class="site-header">
+        <a class="title" href="https:&#x2F;&#x2F;www.lukaswirth.dev/">Lukas Wirth</a>
+        <p class="description">it&#x27;s some kind of blog, I think?</p>
+        <div class="navbar">
+            
+            <a class="navbar-item" href="https:&#x2F;&#x2F;www.lukaswirth.dev&#x2F;about"  title="About me" >
+                About
+            </a>
+            
+            <a class="navbar-item" href="https:&#x2F;&#x2F;www.lukaswirth.dev&#x2F;tlborm"  title="The Little Book of Rust Macros" >
+                tlborm
+            </a>
+            
+            <iframe src="https://github.com/sponsors/Veykril/button" title="Sponsor Veykril" height="32" width="116" style="border: 0;border-radius: 7px;"></iframe>
+        </div>
+    </nav>
+</header>
+
+
+    <div class="page-content">
+        
+<div class="post-header">
+    <h1>IDEs and proc-macros</h1>
+
+    <div class="post-meta">
+        <div class="post-date">
+            Feb 25, 2022
+        </div>
+        <div class="post-tags">
+            
+                
+                
+                    <a href="https:&#x2F;&#x2F;www.lukaswirth.dev/tags/macros">macros</a>
+                
+                    <a href="https:&#x2F;&#x2F;www.lukaswirth.dev/tags/proc-macros">proc-macros</a>
+                
+                    <a href="https:&#x2F;&#x2F;www.lukaswirth.dev/tags/ide">ide</a>
+                
+                    <a href="https:&#x2F;&#x2F;www.lukaswirth.dev/tags/completions">completions</a>
+                
+            
+        </div>
+    </div>
+</div>
+
+
+        
+<div class="post-content">
+    <blockquote>
+<p>Note that this is written with rust-analyzer in mind, as that is where I come from, nevertheless it should apply to IDEs in general.</p>
+</blockquote>
+<p><a href="https://github.com/rust-analyzer/rust-analyzer/"><code>rust-analyzer</code></a> enabled <code>#[attribute]</code> expansion by default on <a href="https://github.com/rust-analyzer/rust-analyzer/pull/10366">Sep 27, 2021</a>, and since then we've seen several issues pop up about user experience degrading when it comes to completions inside of attributed items.
+This is a pretty big issue for most users, especially those who write async or webserver code, as attributes are prominently used there.
+Yet we haven't really started addressing the issue properly <a href="https://github.com/rust-analyzer/rust-analyzer/pull/11444">until recently</a>.</p>
+<p>We briefly talked about it in the <a href="https://rust-analyzer.github.io/blog/2021/12/30/2021-recap.html#proc-macros-and-attributes">2021 rust-analyzer recap</a>, but I figured a separate post about the more general problem as well as possible solutions might be of interest to some people.</p>
+<p>This post will expand on the issue by talking about not just attributes, but also about function-like proc-macros.
+I will however not touch on derive attributes specifically, as they do not really suffer from the problem as they do not replace their annotated item.</p>
+<span id="continue-reading"></span><h1 id="the-problem"><a class="zola-anchor" href="#the-problem" aria-label="Anchor link for: the-problem">The Problem</a></h1>
+<p>So what exactly is the problem?
+To understand that we need to do a shallow dive into how proc-macros behave and the ecosystem around them as well as about how rust-analyzer computes completions.</p>
+<p>If you are already familiar with how proc-macros work as well as how they are usually implemented then you can skip the following section.</p>
+<blockquote>
+<p>Note: If you have the time, consider reading <a href="https://veykril.github.io/tlborm/introduction.html">The Little Book of Rust Macros</a> which explains rust's declarative and procedural macro systems more in-depth.</p>
+</blockquote>
+<h2 id="proc-macros-in-a-nutshell"><a class="zola-anchor" href="#proc-macros-in-a-nutshell" aria-label="Anchor link for: proc-macros-in-a-nutshell">Proc-macros in a Nutshell</a></h2>
+<p>There are three different kinds of proc-macros: attribute proc-macros, derive proc-macros and function-like proc-macros.
+Their definition mostly works the same, at their core, proc-macros are really just rust functions that receive a stream of tokens (two for attributes) as their input, and emit a new stream of tokens as their output.
+The input for attributes are the item they annotate and the tokens between the parentheses in the attribute invocation.
+From here on, when I talk about the input of an attribute, I generally mean the annotated item part, as that is of more importance here.
+When these macros are invoked, rust will turn the input into a so called <a href="https://doc.rust-lang.org/proc_macro/struct.TokenStream.html"><code>TokenStream</code></a> (a fancy collection of tokens).
+Rust then invokes the proc-macro function with this <code>TokenStream</code> as the input, and in case of attributes and function-like proc-macros, replaces the invocation with the output <code>TokenStream</code>.
+For derives, it emits the <code>TokenStream</code> output after the annotated item instead.
+If the proc-macro panics, the panic will be propagated as a compile error at the macro invocation site.
+Panicking is one of two ways for proc-macros to signal failure, the other being the macro expanding into a <a href="https://doc.rust-lang.org/std/macro.compile_error.html"><code>compile_err!(...)</code></a> invocation.</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-keyword z-other z-rust">use</span> <span class="z-meta z-path z-rust">proc_macro<span class="z-punctuation z-accessor z-rust">::</span></span>TokenStream<span class="z-punctuation z-terminator z-rust">;</span>
+</span><span class="z-source z-rust">
+</span><span class="z-source z-rust"><span class="z-meta z-annotation z-rust"><span class="z-punctuation z-definition z-annotation z-rust">#</span><span class="z-punctuation z-section z-group z-begin z-rust">[</span><span class="z-variable z-annotation z-rust">proc_macro_attribute</span><span class="z-punctuation z-section z-group z-end z-rust">]</span></span>
+</span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-modifier z-rust">pub</span> <span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">attribute</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-variable z-parameter z-rust">_attr_input</span><span class="z-punctuation z-separator z-rust">:</span> TokenStream, <span class="z-variable z-parameter z-rust">annotated_item</span><span class="z-punctuation z-separator z-rust">:</span> TokenStream</span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> <span class="z-meta z-function z-return-type z-rust"><span class="z-punctuation z-separator z-rust">-&gt;</span> TokenStream</span> </span><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust">    annotated_item
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-function z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+<div class="annotated">
+    <p>
+        The simplest attribute definition, it just outputs the annotated item again.
+    </p>
+</div>
+<p>Now to do something useful in a proc-macro, you have to parse the input <code>TokenStream</code> into something that can be better worked with.
+This can of course be done by just picking off tokens and parsing them with your favorite parsing techniques, or even just working with the tokens directly.
+However, either of these usually require a lot of boilerplate code, even more so for attributes and derives where you want to parse rust syntax.
+Thankfully, a rust crate for parsing purposes emerged called <a href="https://docs.rs/syn/latest/syn/"><code>syn</code></a>, which offers an API for parsing <code>TokenStream</code>s into structured data as well as offering definitions for all currently existing rust syntaxes.
+I won't go into details of how to use <code>syn</code> or how it works except for one crucial aspect: its failure mode.
+The way failure is modelled is the following: When encountering unexpected syntax, return a <code>TokenStream</code> that consists solely out of a <code>compile_err!(...)</code> invocation with an appropriate message and span.
+This isn't really unique to <code>syn</code> though, but the more general approach of how error handling is usually done in procedural macros.
+This failure mode detail is crucial to the problem at hand and we will come back to that in a bit.</p>
+<p>This is really all that's relevant for us here (I did say <em>shallow</em> dive after all), but for completions sake, once parsing is done, the output <code>TokenStream</code> has to be constructed.
+This is usually done by transforming the <code>syn</code> data structures and then turning them into a <code>TokenStream</code> again, usually via another crate called <a href="https://docs.rs/quote/latest/quote/"><code>quote</code></a>.</p>
+<h2 id="rust-analyzer-completions-in-a-nutshell"><a class="zola-anchor" href="#rust-analyzer-completions-in-a-nutshell" aria-label="Anchor link for: rust-analyzer-completions-in-a-nutshell"><code>rust-analyzer</code> Completions in a Nutshell</a></h2>
+<p>To put it brief, when rust-analyzer calculates completions for the current cursor position, it duplicates the current file, inserts a dummy identifier (think of it as looking at a future syntax tree with something the user has typed) and then tries to expand all macro invocations at the cursor position in both files until one of the expansions fails, at which point it stops.
+After that, it just looks at all the surrounding syntax to calculate a completion context, which can then be used to drive the actual completion computations.</p>
+<h2 id="proc-macro-failures"><a class="zola-anchor" href="#proc-macro-failures" aria-label="Anchor link for: proc-macro-failures">Proc-macro Failures</a></h2>
+<p>So with proc-macro basics out of the way, what is it that makes rust-analyzer stop showing completions in attribute annotated items in certain situations?
+In short: proc-macro failure.</p>
+<p>Usually when a user types code, they are bound to introduce invalid rust syntax at some point sooner or later.
+This is irrelevant when this invalid syntax occurs outside of macros, as rust-analyzer can easily recover from most syntax errors.
+It gets more complicated within attributed items though.
+When no syntax errors are introduced while typing in such an item, everything works just fine.
+The proc-macro expands and rust-analyzer can do its completion calculations on the macro expanded output.</p>
+<p>When a syntax error does get introduced though, what will usually happen is that the proc-macro either panics (the opposite of being graceful), in which case rust-analyzer just discards the item, or it emits a <code>compile_err!(...)</code> invocation (and nothing else) in which case rust-analyzer also discards the item and replaces it with this practically empty expansion.
+And here lies the problem: when calculating completions for the current cursor position, rust-analyzer descends into all macro invocations at the current position first.
+It then calculates completions, but at this point there is nothing to calculate them for, as the proc-macro basically erased everything.</p>
+<p>Now this was only speaking under the assumption of attributes, but this actually also affects function-like proc-macros.
+While function-like proc-macros don't take rust syntax as input, rust-analyzer can still at least do identifier completions for them, as long as they expand properly<sup class="footnote-reference"><a href="#1">1</a></sup>.
+So for these as well, if the proc-macro panics or expands to just a <code>compile_err!(...)</code>, we once again lose the ability to do completions.</p>
+<p><sup class="footnote-reference"><a href="#1">1</a></sup> In the far future we might able to use some <a href="https://github.com/rust-analyzer/rust-analyzer/issues/7402#issuecomment-770196608">tricks</a> to improve on possible completions there.</p>
+<h1 id="possible-solutions"><a class="zola-anchor" href="#possible-solutions" aria-label="Anchor link for: possible-solutions">Possible Solutions</a></h1>
+<p>Now, there are few possible solutions to this, each with their own caveats.
+So let's look at some possible ideas that either rust-analyzer or proc-macro crates can employ to make this situation work out better.</p>
+<h2 id="don-t-descend-into-attribute-expansions"><a class="zola-anchor" href="#don-t-descend-into-attribute-expansions" aria-label="Anchor link for: don-t-descend-into-attribute-expansions">Don't descend into attribute expansions</a></h2>
+<p>Perhaps the simplest approach at fixing this is to not descend the completion context into the expansion of attributes.
+This way, we won't have any problems with invalid syntax as rust-analyzer's general parsing recovery strategies will handle syntax errors as usual, by building proper but incomplete syntax trees.</p>
+<p>This comes at the expense of not being able to show names (with call-site hygiene) for completions introduced by the attribute into the direct surrounding scope.
+It may also show incorrect completions or even not show some completions at all, as the original item is not actually recorded in our semantic layers due to the item in actuality just being seen as an attribute macro call.</p>
+<p>This also skips over the problem for function-like proc-macros completely as keeping the macro-call there doesn't really do anything for completions either.</p>
+<h2 id="check-the-expansion-for-compile-err"><a class="zola-anchor" href="#check-the-expansion-for-compile-err" aria-label="Anchor link for: check-the-expansion-for-compile-err">Check the expansion for <code>compile_err!</code></a></h2>
+<p>Another approach that somewhat builds on the previous one would be to check if the proc-macro expands to one or more <code>compile_err!(...)</code> invocations or if it panics, and not descend into the expansion for completions in that case.</p>
+<p>This might not be too feasible to do in rust-analyzer, as <code>compile_err!(...)</code> invocations expand into nothingness (with its diagnostic as a side effect), so finding those can turn out to be tricky, especially if the proc-macro manages to expand into more macro-calls that all expand to a <code>compile_err!(...)</code> on different expansion levels.
+It also suffers from the problem that the completion context for the cursor position now changes based on whether the user typed something valid or not, as we may be looking at the successful expansion or the unexpanded attributed item.</p>
+<p>Those new problems aside, we also carry over the problems from the previous section, including ignoring the problem entirely for function-like proc-macros again.</p>
+<h2 id="fix-up-invalid-syntax-nodes"><a class="zola-anchor" href="#fix-up-invalid-syntax-nodes" aria-label="Anchor link for: fix-up-invalid-syntax-nodes">Fix up invalid syntax nodes</a></h2>
+<p>The following is an approach suggested by <a href="https://github.com/dtolnay/">@dtolnay</a>, based on rustc's behavior<sup class="footnote-reference"><a href="#2">2</a></sup>: Fix up or snip out invalid syntax nodes before passing them to the proc-macro.</p>
+<p>The reason rustc does this is to prevent the proc-macro from emitting the same diagnostic as a <code>compile_err!(...)</code> that rustc will already emit.
+This also allows proc-macro authors to assume they will always receive <code>TokenStream</code>s that encode valid rust syntax in the case of attribute and derive proc-macros.
+Note that this only applies to attributes and derives, since the syntax there is known to be rust syntax, making it irrelevant to function-like proc-macros (which we do care about as well).</p>
+<p>Now snipping out invalid syntax is a no-go for us, as we can't just snip out the identifier the user is typing, so we are left with fixing up syntax.
+This is the approach we use as of this writing, implemented in <a href="https://github.com/rust-analyzer/rust-analyzer/pull/11444">#11444</a>.
+Roughly speaking, we inspect the syntax nodes we pass to attributes, fix up errors, and save these fix ups to then undo them after the expansion if possible.
+Now in theory this works well enough (assuming some improvements, as this is currently a proof of concept), but this actually still has its own problems.</p>
+<p>For one we ignore function-like proc-macros again, as we do not know the syntax they expect so we can't do any fix ups.
+But there is another problem regarding attributes here: while they require proper rust syntax as their input, they can still make more strict assumptions about what they expect and decide to fail if these are not upheld.
+An example of that is the ability to configure the attribute invocation via special expected keyword usage or pseudo-attributes, attributes that do not exist in reality and which are stripped before expansion by the invoked attribute.</p>
+<p>Some crates, like <code>salsa</code> for example, make use of these pseudo-helper attributes(not to be confused with <a href="https://veykril.github.io/tlborm/proc-macros/methodical/derive.html#helper-attributes">derive-helper attributes</a>):</p>
+<pre data-lang="rust" class="language-rust z-code"><code class="language-rust" data-lang="rust"><span class="z-source z-rust"><span class="z-meta z-annotation z-rust"><span class="z-punctuation z-definition z-annotation z-rust">#</span><span class="z-punctuation z-section z-group z-begin z-rust">[</span><span class="z-variable z-annotation z-rust">salsa</span>::<span class="z-variable z-annotation z-rust">query_group</span><span class="z-meta z-annotation z-parameters z-rust"><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span></span><span class="z-meta z-annotation z-parameters z-rust"><span class="z-meta z-group z-rust">DatabaseStorage</span></span><span class="z-meta z-annotation z-parameters z-rust"><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span></span><span class="z-punctuation z-section z-group z-end z-rust">]</span></span>
+</span><span class="z-source z-rust"><span class="z-meta z-trait z-rust"><span class="z-storage z-type z-trait z-rust">trait</span> <span class="z-entity z-name z-trait z-rust">Database</span> <span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-begin z-rust">{</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-trait z-rust"><span class="z-meta z-block z-rust">    <span class="z-meta z-annotation z-rust"><span class="z-punctuation z-definition z-annotation z-rust">#</span><span class="z-punctuation z-section z-group z-begin z-rust">[</span><span class="z-variable z-annotation z-rust">salsa</span>::<span class="z-variable z-annotation z-rust">input</span><span class="z-punctuation z-section z-group z-end z-rust">]</span></span> <span class="z-comment z-line z-double-slash z-rust"><span class="z-punctuation z-definition z-comment z-rust">//</span> &lt;- this is a virtual attribute that salsa strips
+</span></span></span></span><span class="z-source z-rust"><span class="z-meta z-trait z-rust"><span class="z-meta z-block z-rust">    <span class="z-meta z-function z-rust"><span class="z-meta z-function z-rust"><span class="z-storage z-type z-function z-rust">fn</span> </span><span class="z-entity z-name z-function z-rust">input_string</span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-begin z-rust">(</span><span class="z-keyword z-operator z-rust">&amp;</span><span class="z-variable z-parameter z-rust">self</span>, <span class="z-variable z-parameter z-rust">key</span><span class="z-punctuation z-separator z-rust">:</span> <span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-begin z-rust">(</span></span><span class="z-meta z-group z-rust"><span class="z-punctuation z-section z-group z-end z-rust">)</span></span></span><span class="z-meta z-function z-rust"><span class="z-meta z-function z-parameters z-rust"><span class="z-punctuation z-section z-parameters z-end z-rust">)</span></span></span></span><span class="z-meta z-function z-rust"> <span class="z-meta z-function z-return-type z-rust"><span class="z-punctuation z-separator z-rust">-&gt;</span> <span class="z-meta z-generic z-rust">Arc<span class="z-punctuation z-definition z-generic z-begin z-rust">&lt;</span><span class="z-support z-type z-rust">String</span><span class="z-punctuation z-definition z-generic z-end z-rust">&gt;</span></span></span></span><span class="z-punctuation z-terminator z-rust">;</span>
+</span></span></span><span class="z-source z-rust"><span class="z-meta z-trait z-rust"><span class="z-meta z-block z-rust"></span><span class="z-meta z-block z-rust"><span class="z-punctuation z-section z-block z-end z-rust">}</span></span></span>
+</span></code></pre>
+<p>The <code>#[salsa::input]</code> attribute here tells the <a href="https://docs.rs/salsa-macros/0.16.0/salsa_macros/attr.query_group.html"><code>#[salsa::query_group]</code></a> attribute, that the <code>input_string</code> function is an <code>input</code> query, opposed to a default query which then has an effect on the actual expansion of the <code>#[salsa::query_group]</code> attribute.</p>
+<p>So what happens if we pass a helper attribute salsa doesn't expect?
+You guessed right, it bails out with a <code>compile_err!(...)</code> expansion.
+Now in this case it won't be too problematic as this requires a <code>#[salsa::&lt;cursor here&gt;]</code> attribute specifically, where we don't even have anything to complete since helper attributes don't actually exist (a shortcoming of the proc-macro api in my eyes and something I played around with in <a href="https://github.com/salsa-rs/salsa/pull/286">salsa#286</a>), but I hope it gets the point across.</p>
+<p>So even this approach doesn't fully fix just the problem for attributes (although it get's really close).</p>
+<p><sup class="footnote-reference"><a href="#2">2</a></sup> rustc regressed in its current behavior <a href="https://github.com/rust-lang/rust/issues/76360#issuecomment-951145592">rust#76360#issuecomment-951145592</a></p>
+<h2 id="fix-the-proc-macro-ecosystem"><a class="zola-anchor" href="#fix-the-proc-macro-ecosystem" aria-label="Anchor link for: fix-the-proc-macro-ecosystem">&quot;fix&quot; the proc-macro ecosystem</a></h2>
+<p>Now we've seen a few approaches at how rust-analyzer could fix this problem, but there is another side from which we can look at tackling this problem: the proc-macros themselves.</p>
+<p>This is actually the approach we first envisioned, but eagerly trying to move the ecosystem to do something we aren't even 100% on board with just asks for trouble.</p>
+<p>So what do I mean when I say fixing proc-macros?
+Well, the gist of it is to make them more IDE(rust-analyzer) friendly.</p>
+<p>As stated earlier, the current ecosystem is centered around parsing without recovery and bailing on the first unexpected token found.
+So we clearly would want to move the ecosystem towards recoverable parsing (no small feat by any means) so that even if faced with unexpected input, the proc-macro would still produce its expansion on a best effort basis <em>together with the <code>compile_err!(...)</code> invocations</em>.
+This change would also allow more easily yielding multiple errors at once as a side effect, as no more immediate error returning would occur.</p>
+<p>An example of this is <a href="https://github.com/tokio-rs/tokio/pull/4162">tokio#4612</a>, which makes the tokio attributes more failure resistant.
+It does so by falling back to dummy values when something is going wrong, this allows it to produce a useful expansion while emitting an additional <code>compile_err!(...)</code> telling what failed.</p>
+<p>Why is this such a huge thing?
+Parser recovery is a difficult problem in general, and while there probably won't be too much trouble with a library appearing that will do recoverable rust-syntax parsing, function-like proc-macro authors will have to handwrite this recovery themselves almost all the time as their input is usually a domain-specific syntax.
+Although maybe there are libraries out there that allow recoverable parsing to be written easily without much fuss (I have not done my homework on this matter yet).</p>
+<p>This pushes the burden from one team (rust-analyzer) to basically every rust developer instead (this does sound quite terrifying), but with the proper language and/or library support it might turn out just fine.</p>
+<p>Now here we still have a diagnostics problem for attributes though: if rust-analyzer doesn't fix up the nodes before passing them to attributes, it will report the syntax error itself and then basically the same error again from macro's parsing failure as well.</p>
+<h1 id="conclusion"><a class="zola-anchor" href="#conclusion" aria-label="Anchor link for: conclusion">Conclusion</a></h1>
+<p>So, what is the ideal solution?
+Well, there isn't really just one.
+All of them have their problems, and for what it is worth we may have yet to discover one solution to rule them all.
+As I see it, the latter two are currently the most promising, and if put together, they cover almost all issues.
+The fix-up approach takes care of most attribute related problems already, and the problems that we are left with afterwards can be taken care of by the proc-macros themselves.</p>
+<p>For attributes, this means it is fine to assume valid rust syntax, but with having more strict requirements on the syntax, the proc-macro has to handle these requirements with recoverable strategies.
+As for function-like proc-macros, the IDE really isn't able to do much at all unfortunately, so here the proc-macro is on its own and should try to recover from unexpected input as much as it can if completions are feasible for it in the first place that is.</p>
+<p>With that all said, the best thing rust-analyzer can (and probably should) do here is to now improve on the syntax fix-up system and make it work as well as possibly.
+I also hope that this post gave some better insights into the problem, and to what degree IDEs can accommodate for these.</p>
+<blockquote>
+<p>Think you have another possibly nice solution to the problem? Propose it in the <a href="https://github.com/rust-analyzer/rust-analyzer/issues/11014">rust-analyzer issue</a>!</p>
+</blockquote>
+
+</div>
+
+    </div>
+
+    <footer class="site-footer">
+    <p>
+        <a href="https://www.lukaswirth.dev/rss.xml">
+            <i class="fa fa-rss"></i> rss
+        </a>
+
+        <a href="https://bsky.app/profile/lukaswirth.dev">
+            <i class="fa fa-twitter"></i> veykril
+        </a>
+
+        <a href="https://hachyderm.io/@veykril">
+            <i class="fa fa-mastodon"></i> veykril
+        </a>
+
+        <a href="https://github.com/veykril">
+            <i class="fa fa-github"></i> veykril
+        </a>
+
+        
+            <a href="https://github.com&#x2F;veykril&#x2F;veykril.github.io/blob/master/content/posts&#x2F;ide-proc-macros.md">
+                <i class="fa fa-edit"></i> edit
+            </a>
+        
+    </p>
+</footer>
+
+</body>
+
+</html>
